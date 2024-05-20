@@ -4,8 +4,23 @@ import (
 	"fmt"
 )
 
+
 func ZkTest1() {
+    fmt.Println("\n----------------------------------")
     fmt.Println("ZK Exercise One")
+    fmt.Println("----------------------------------\n")
+}
+
+func ZkTest2() {
+    fmt.Println("\n----------------------------------")
+    fmt.Println("ZK Exercise Two")
+    fmt.Println("----------------------------------\n")
+}
+
+func ZkTest3() {
+    fmt.Println("\n----------------------------------")
+    fmt.Println("ZK Exercise Three")
+    fmt.Println("----------------------------------\n")
 }
 
 type Polynomial struct {
