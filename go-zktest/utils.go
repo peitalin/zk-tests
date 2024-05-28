@@ -26,26 +26,30 @@ func TestZipImplementations() {
     zipped2 := Zip2(arr1, arr2, arr3)
 	fmt.Println("zipped2:", zipped2, "(using iterator)")
 
-    zipped3 := Zip3(arr1, arr2, arr3)
+    zipped3 := ZipUint64(
+        []uint64{1,2,3,4},
+        []uint64{5,6,7,8},
+        []uint64{10,11,12,15},
+    )
 	fmt.Println("zipped3:", zipped3, "(using go channels)")
 
 }
 
-func Zip3(lists ...[]float64) [][]float64 {
+func ZipUint64(lists ...[]uint64) [][]uint64 {
 	zipChannel := zipChannel(lists...)
-    zipped := make([][]float64, 0)
+    zipped := make([][]uint64, 0)
 	for tuple := range zipChannel {
         zipped = append(zipped, tuple)
 	}
     return zipped
 }
 
-func zipChannel(lists ...[]float64) chan []float64 {
-    out := make(chan []float64)
+func zipChannel(lists ...[]uint64) chan []uint64 {
+    out := make(chan []uint64)
     go func() {
         defer close(out)
         for i := range len(lists[0]) {
-            tup := make([]float64, len(lists))
+            tup := make([]uint64, len(lists))
             for j := range lists {
                 tup[j] = lists[j][i]
             }

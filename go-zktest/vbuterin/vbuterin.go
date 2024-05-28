@@ -5,30 +5,10 @@ import (
     "math"
     "errors"
 	utils "github.com/peitalin/go-zktest"
-
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/polynomial"
 )
 
 func Ex1() {
 	utils.PrintHeading("Vitalik's R1CS to QAP Exercise")
-
-	curveOrder := fr.Modulus()
-	fmt.Println("curveOrder: ", curveOrder)
-
-	p1 := polynomial.Polynomial{
-		fr.NewElement(6),
-		fr.NewElement(4),
-		fr.NewElement(9),
-	}
-	p2 := polynomial.Polynomial{
-		fr.NewElement(2),
-		fr.NewElement(4),
-	}
-	fmt.Println("p1: ", p1.Text(10))
-	fmt.Println("p2: ", p2.Text(10))
-	fmt.Println("p1 + p2: ", p1.Add(p1, p2).Text(10))
-	fmt.Println("highest degree polynomial on the bottom.\n")
 
 	arr1 := []float64{1,2,3,4}
 	arr2 := []float64{5,6,7,8}
@@ -40,23 +20,22 @@ func Ex1() {
     fmt.Println("\nsubtract poly:", spoly)
 
     mpoly := multiply_polys(arr1, arr2)
-    fmt.Println("\nmultiply poly:", mpoly)
+    fmt.Println("\nmultiply poly:", mpoly, "\n")
 
-    // var p fr.Element
-	// fmt.Println("p1[0], p1[2]: ", &p1[0], &p1[1])
-	// fmt.Println("p1[0] + p1[2]: ", p.Add(&p1[0], &p1[1]))
     mk := mk_singleton(1, 2, 3)
     fmt.Println("\nmk: ", mk)
 
+    epoly := eval_poly([]float64{1,2,3,4}, 3)
+    fmt.Println("\nepoly: ", epoly, "\n")
 
-    epoly := eval_poly([]float64{1,2,3}, 3)
-    fmt.Println("epoly: ", epoly)
+    ipoly, _ := lagrange_interp([]float64{12, 10, 15, 15})
+    fmt.Println("\nInterpolated Poly: ", ipoly)
 
-    lpoly, _ := lagrange_interp([]float64{12, 10, 15, 15})
-    fmt.Println("lpoly: ", lpoly)
-
-    lpoly2, _ := lagrange_interp([]float64{ 0, 0, 0, 5 })
-    fmt.Println("lpoly2: ", lpoly2)
+    var pint float64
+    for i := range 5 {
+        pint = eval_poly(ipoly, float64(i))
+        fmt.Println(fmt.Sprintf("eval_poly(%v): %v", i, pint))
+    }
 
     dpoly, remainder := div_polys([]float64{4,5,6,7}, []float64{1,2,3,4})
     fmt.Println("dpoly: ", dpoly, remainder)
@@ -167,7 +146,8 @@ func mk_singleton(point_loc, height, total_pts float64) []float64 {
 
     for i := 1.0; i <= total_pts; i++ {
         if i != point_loc {
-            poly = multiply_polys(poly, []float64{ -i, 1 })
+            neg_poly := []float64{ -i, 1 }
+            poly = multiply_polys(poly, neg_poly)
         }
     }
     return poly
@@ -259,7 +239,10 @@ func r1cs_to_qap(A, B, C [][]float64) ([][]float64, [][]float64, [][]float64, []
 }
 
 
-func create_solution_polynomials(r []float64, A, B, C [][]float64) ([]float64, []float64, []float64, []float64) {
+func create_solution_polynomials(
+    r []float64,
+    A, B, C [][]float64,
+) ([]float64, []float64, []float64, []float64) {
 
     Apoly := []float64{}
     Bpoly := []float64{}
