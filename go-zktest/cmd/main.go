@@ -5,8 +5,9 @@ import (
 	// ch7 "github.com/peitalin/go-zktest/ch7"
     // ch11 "github.com/peitalin/go-zktest/ch11"
     // ch13 "github.com/peitalin/go-zktest/ch13"
-    vbuterin "github.com/peitalin/go-zktest/vbuterin"
-    polyutils "github.com/peitalin/go-zktest/polyutils"
+    // vbuterin "github.com/peitalin/go-zktest/vbuterin"
+    // polyutils "github.com/peitalin/go-zktest/polyutils"
+    blsSignatures "github.com/peitalin/go-zktest/blsSignatures"
 )
 
 func main() {
@@ -25,8 +26,10 @@ func main() {
     // ch11.Ex1()
 
     //// Vbuterin Examples
-    vbuterin.Ex1()
+    // vbuterin.Ex1()
 
-    polyutils.Ex1()
+    // polyutils.Ex1()
     // utils.TestZipImplementations()
+
+    blsSignatures.Ex1()
 }
