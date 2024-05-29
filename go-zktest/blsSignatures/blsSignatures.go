@@ -28,7 +28,7 @@ func Ex1() {
 	var msgBytes [32]byte
     copy(msgBytes[:], "awww hell naw") // all three BLS keys sign the same message
 
-    // signature is a G1Point
+    // signature is a G2Point
     fmt.Println("\nSigning message using BLS key...")
     signature := blsKey.SignMessage(msgBytes)
     signature2 := blsKey2.SignMessage(msgBytes)
@@ -75,17 +75,17 @@ type G2Point struct {
 }
 
 type Signature struct {
-    G1Point `json:"g1_point"`
+    G2Point `json:"g2_point"`
 }
 
 type KeyPair struct {
     PrivKey PrivateKey
-    PubKey G2Point
+    PubKey G1Point
 }
 
 func NewKeyPair(sk PrivateKey) KeyPair {
-    pk := MulByGeneratorG2(sk)
-    return KeyPair{ sk, G2Point{ pk }}
+    pk := MulByGeneratorG1(sk)
+    return KeyPair{ sk, G1Point{ pk }}
 }
 
 func NewKeyPairFromString(sk string) KeyPair {
@@ -97,7 +97,7 @@ func GenerateRandomBlsKeys() KeyPair {
     // Max value is order of the curve
     max := new(big.Int)
     max.SetString(fr.Modulus().String(), 10)
-	//Generate cryptographically strong pseudo-random between 0 - max
+	// Generate cryptographically strong pseudo-random between 0 - max
     n, _ := rand.Int(rand.Reader, max)
     sk := new(PrivateKey).SetBigInt(n)
     return NewKeyPair(*sk)
@@ -115,15 +115,15 @@ func MulByGeneratorG2(a fr.Element) bn254.G2Affine {
 
 
 func (k *KeyPair) SignMessage(message [32]byte) Signature {
-    H := HashToCurve(message) // G1Point
+    H := HashToCurve(message) // G2Point
     sk := k.PrivKey.BigInt(new(big.Int)) // fr.Element
-    sig := new(bn254.G1Affine).ScalarMultiplication(H, sk)
-    return Signature{ G1Point{ *sig } }
+    sig := new(bn254.G2Affine).ScalarMultiplication(H, sk)
+    return Signature{ G2Point{ *sig } }
 }
 
 // Verify a message against a public key
-func (sig *Signature) Verify(pubkey *G2Point, message [32]byte) (bool, error) {
-    ok, err := VerifySig(sig.G1Affine, pubkey.G2Affine, message)
+func (sig *Signature) Verify(pubkey *G1Point, message [32]byte) (bool, error) {
+    ok, err := VerifySig(pubkey.G1Affine, sig.G2Affine, message)
     if err != nil {
         return false, err
     }
@@ -143,31 +143,36 @@ func (p G2Point) Add(p2 G2Point) G2Point {
 }
 
 func (sig Signature) Add(otherS Signature) Signature {
-	sig.G1Point = sig.G1Point.Add(otherS.G1Point)
+	sig.G2Point = sig.G2Point.Add(otherS.G2Point)
 	return sig
 }
 
 
 func VerifySig(
-	sig bn254.G1Affine,
-	pubkey bn254.G2Affine,
+	pubkey bn254.G1Affine,
+	sig bn254.G2Affine,
 	msgBytes [32]byte,
 ) (bool, error) {
 
-	_, _, _, g2Gen := bn254.Generators()
+	_, _, g1Gen, _ := bn254.Generators()
 	// g2GenB := getG2Generator()
 
-	hashMsg := *HashToCurve(msgBytes) // message hashed to a G1Point
+	hashMsg := *HashToCurve(msgBytes) // message hashed to a G2Point
 
-    var negSig bn254.G1Affine
+    var negSig bn254.G2Affine
     negSig.Neg(&sig)
 
-    P := []bn254.G1Affine{ hashMsg, negSig }
-    Q := []bn254.G2Affine{ pubkey, g2Gen }
+    P := []bn254.G1Affine{ pubkey, g1Gen }
+    Q := []bn254.G2Affine{ hashMsg, negSig }
 
+    //// Hashing Message to G1 Version:
     // sig = [sk]*H(m)
     // e(H(m), pubkey) == e(H(m), [sk]*g2) == e(H(m), g2)^sk == e([sk]*H(m), g2) == e(sig, g2)
     // e(hashMsg, pubkey) == e(sig, g2Gen)
+
+    //// Hashing Message to G2 Version:
+    // e(pubkey, H(m)) == e([sk]*g1, H(m)) == e(g1, H(m))^sk == e(g1, [sk]*H(m)) == e(g1, sig)
+    // e(pubkey, hashMsg) == e(g1Gen, sig)
     ok, err := bn254.PairingCheck(P, Q)
 	return ok, err
 }
@@ -199,7 +204,7 @@ func NewG2Point(X, Y [2]*big.Int) *bn254.G2Affine {
     }
 }
 
-func HashToCurve(digest [32]byte) *bn254.G1Affine {
+func HashToCurve(digest [32]byte) *bn254.G2Affine {
     // HashToCurve implements the simple hash-and-check (also sometimes try-and-increment) algorithm
     // see https://hackmd.io/@benjaminion/bls12-381#Hash-and-check
 
@@ -220,13 +225,14 @@ func HashToCurve(digest [32]byte) *bn254.G1Affine {
         if y.ModSqrt(y, fp.Modulus()) == nil {
             x.Add(x, one).Mod(x, fp.Modulus())
         } else {
+            // hash message H(m) to G1 point
+            // return NewG1Point(x, y)
 
-            return NewG1Point(x, y)
-            //// if we want to hash to G2, we multiply by the G2 cofactor to convert it into a point in G2
-            // xx := new(fr.Element).SetBigInt(x)
-            // g2Msg := MulByGeneratorG2(*xx)
-            // fmt.Println("Message Hashed to G2: ", g2Msg.String())
-            // return &g2Msg
+            // if we want to hash to G2 instead, we multiply by the G2 cofactor to convert it into a point in G2
+            xx := new(fr.Element).SetBigInt(x)
+            g2Msg := MulByGeneratorG2(*xx)
+            fmt.Println("Message Hashed to G2: ", g2Msg.String())
+            return &g2Msg
         }
 	}
 }
