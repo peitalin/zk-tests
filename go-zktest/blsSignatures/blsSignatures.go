@@ -161,6 +161,8 @@ func VerifySig(
 
     var negSig bn254.G2Affine
     negSig.Neg(&sig)
+    fmt.Println("\nsig: ", sig.String())
+    fmt.Println("\nnegSig: ", negSig.String(), "\n")
 
     P := []bn254.G1Affine{ pubkey, g1Gen }
     Q := []bn254.G2Affine{ hashMsg, negSig }
@@ -228,10 +230,9 @@ func HashToCurve(digest [32]byte) *bn254.G2Affine {
             // hash message H(m) to G1 point
             // return NewG1Point(x, y)
 
-            // if we want to hash to G2 instead, we multiply by the G2 cofactor to convert it into a point in G2
+            // to hash to G2 instead, we multiply x by the G2 generator to convert it into a point in G2
             xx := new(fr.Element).SetBigInt(x)
             g2Msg := MulByGeneratorG2(*xx)
-            fmt.Println("Message Hashed to G2: ", g2Msg.String())
             return &g2Msg
         }
 	}
